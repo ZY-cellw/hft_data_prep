@@ -100,3 +100,4 @@ cython_debug/
 # Windows
 Thumbs.db
 Tickdata/*.csv
+Tickdata/*.csv
