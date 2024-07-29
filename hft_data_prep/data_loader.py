@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from typing import List, Union, Optional
+from dateutil.relativedelta import relativedelta
 
 def load_csv_files(directory: str, file_pattern: str = "*.csv") -> pd.DataFrame:
     """
@@ -37,10 +38,29 @@ def preprocess_timestamp(combined_df: pd.DataFrame, timestamp: str = 'timestamp'
         combined_df[timestamp] = pd.to_datetime(combined_df[timestamp], format='%Y-%m-%d %H:%M:%S.%f')
     return combined_df
 
+def interval_to_relativedelta(interval: str) -> relativedelta:
+    """
+    Convert interval string to relativedelta object.
+    """
+    if interval == "1d":
+        return relativedelta(days=1)
+    elif interval == "1wk":
+        return relativedelta(weeks=1)
+    elif interval == "1mo":
+        return relativedelta(months=1)
+    elif interval == "3mo":
+        return relativedelta(months=3)
+    elif interval == "1y":
+        return relativedelta(years=1)
+    else:
+        # Default to 1 day if interval is not recognized
+        return relativedelta(days=1)
+
 def filter_data(combined_df: pd.DataFrame, 
                 tickers: Optional[Union[str, List[str]]] = None, 
                 start_time: Optional[str] = None, 
-                end_time: Optional[str] = None) -> pd.DataFrame:
+                end_time: Optional[str] = None,
+                interval: Optional[str] = None) -> pd.DataFrame:
     """
     Filter the combined DataFrame for specific tickers and/or time range.
     Returns:
@@ -65,5 +85,14 @@ def filter_data(combined_df: pd.DataFrame,
         end_time = pd.to_datetime(end_time)
         filtered_df = filtered_df[filtered_df['timestamp'] <= end_time]
     
-    print(f"Filtered DataFrame shape: {filtered_df.shape}")
+    # Filter by interval
+    if interval:
+        delta = interval_to_relativedelta(interval)
+        if not start_time:
+            start_time = filtered_df['timestamp'].min()
+        end_time = start_time + delta
+        filtered_df = filtered_df[(filtered_df['timestamp'] >= start_time) & 
+                                  (filtered_df['timestamp'] < end_time)]
+
+    filtered_df = filtered_df.sort_values(['stockcode', 'timestamp'])
     return filtered_df
