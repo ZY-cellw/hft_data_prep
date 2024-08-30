@@ -313,14 +313,20 @@ def find_morning_matching_price(df: pd.DataFrame) -> tuple[pd.Timestamp, float]:
     most_frequent_timestamp = morning_df['timestamp'].value_counts().idxmax()
 
     matching_trades = morning_df[(morning_df['timestamp'] == most_frequent_timestamp) & 
-                                 (morning_df['change_reason'] == 3) & 
-                                 (morning_df['mp_quantity'] != 0)]
+                                 (morning_df['change_reason'] == 3)]
 
     if not matching_trades.empty:
-        matching_price = matching_trades['price'].iloc[0]
+        valid_trades = matching_trades[matching_trades['mp_quantity'] != 0]
+        
+        if not valid_trades.empty:
+            matching_price = valid_trades['price'].iloc[-1]
+        else:
+            matching_price = matching_trades['price'].iloc[-1]
+        
         return most_frequent_timestamp, matching_price
     else:
         return most_frequent_timestamp, 0
+
 
 def find_closing_matching_price(df: pd.DataFrame) -> tuple[pd.Timestamp, float]:
     """
@@ -336,16 +342,21 @@ def find_closing_matching_price(df: pd.DataFrame) -> tuple[pd.Timestamp, float]:
                     (df['timestamp'].dt.time <= pd.to_datetime('17:06:00').time())]
 
     if closing_df.empty:
-        return pd.NaT, 0
+        return pd.NaT, 0  
 
     most_frequent_timestamp = closing_df['timestamp'].value_counts().idxmax()
 
     matching_trades = closing_df[(closing_df['timestamp'] == most_frequent_timestamp) & 
-                                 (closing_df['change_reason'] == 3) & 
-                                 (closing_df['mp_quantity'] != 0)]
+                                 (closing_df['change_reason'] == 3)]
 
     if not matching_trades.empty:
-        matching_price = matching_trades['price'].iloc[0]
+        valid_trades = matching_trades[matching_trades['mp_quantity'] != 0]
+        
+        if not valid_trades.empty:
+            matching_price = valid_trades['price'].iloc[-1]
+        else:
+            matching_price = matching_trades['price'].iloc[-1]
+        
         return most_frequent_timestamp, matching_price
     else:
         return most_frequent_timestamp, 0
